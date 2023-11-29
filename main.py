@@ -43,7 +43,7 @@ def main():
       base_probs = None
 
   # Build the loss function.
-  loss_fn = utils.build_loss_fn(FLAGS.mode == 'loss', base_probs, FLAGS.tau)
+  loss_fn = build_loss_fn(FLAGS.mode == 'loss', base_probs, FLAGS.tau)
 
   # Prepare the metrics, the optimizer, etc.
   train_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
@@ -86,7 +86,7 @@ def main():
       train_acc_metric.update_state(y, logits)
 
       # Log every 1000 batches.
-      if step % 10 == 0:
+      if step % 1000 == 0:
         print(f'Training loss (for one batch) at step {step}: {loss_value:.4f}')
         with train_summary_writer.as_default():
           tf.summary.scalar(
@@ -130,6 +130,28 @@ def main():
             test_adj_acc,
             step=(epoch + 1) * batches_per_epoch)
 
+
+def build_loss_fn(use_la_loss, base_probs, tau=1.0):
+  """Builds the loss function to be used for training.
+
+  Args:
+    use_la_loss: Whether or not to use the logit-adjusted loss.
+    base_probs: Base probabilities to use in the logit-adjusted loss.
+    tau: Temperature scaling parameter for the base probabilities.
+
+  Returns:
+    A loss function with signature loss(labels, logits).
+  """
+
+  def loss_fn(labels, logits):
+    if use_la_loss:
+      logits = logits + tf.math.log(
+          tf.cast(base_probs**tau + 1e-12, dtype=tf.float32))
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=labels, logits=logits)
+    return tf.reduce_mean(loss, axis=0)
+
+  return loss_fn
 
 if __name__ == '__main__':
   main()

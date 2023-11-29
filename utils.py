@@ -21,29 +21,6 @@ import dataclasses
 import tensorflow as tf
 
 
-def build_loss_fn(use_la_loss, base_probs, tau=1.0):
-  """Builds the loss function to be used for training.
-
-  Args:
-    use_la_loss: Whether or not to use the logit-adjusted loss.
-    base_probs: Base probabilities to use in the logit-adjusted loss.
-    tau: Temperature scaling parameter for the base probabilities.
-
-  Returns:
-    A loss function with signature loss(labels, logits).
-  """
-
-  def loss_fn(labels, logits):
-    if use_la_loss:
-      logits = logits + tf.math.log(
-          tf.cast(base_probs**tau + 1e-12, dtype=tf.float32))
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=labels, logits=logits)
-    return tf.reduce_mean(loss, axis=0)
-
-  return loss_fn
-
-
 class LearningRateSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   """Step learning rate schedule."""
 

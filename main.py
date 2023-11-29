@@ -1,50 +1,22 @@
-# coding=utf-8
-# Copyright 2023 The Google Research Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Code for the paper: Long-tail learning via logit adjustment, ICLR 2021.
-
-Paper: https://arxiv.org/abs/2007.07314
-
-Example usage:
-    $ python -m logit_adjustment.main --dataset=cifar10-lt
-"""
-
 import os
 
-from absl import app
-from absl import flags
-from logit_adjustment import models
-from logit_adjustment import utils
+import models
+import utils
 import numpy as np
 import tensorflow as tf
 
-FLAGS = flags.FLAGS
 
-flags.DEFINE_string('dataset', 'cifar10-lt', 'Dataset to use.')
-flags.DEFINE_string('data_home', 'logit_adjustment/data',
-                    'Directory where data files are stored.')
-flags.DEFINE_integer('train_batch_size', 128, 'Train batch size.')
-flags.DEFINE_integer('test_batch_size', 100, 'Test batch size.')
-flags.DEFINE_enum('mode', 'posthoc', ['baseline', 'posthoc', 'loss'],
-                  'Logit-adjustment mode. See paper for details.')
-flags.DEFINE_float('tau', 1.0, 'Tau parameter for logit adjustment.')
-flags.DEFINE_string('tb_log_dir', 'logit_adjustment/log',
-                    'Path to write Tensorboard summaries.')
+class FLAGS:
+  dataset = 'cifar10-lt'
+  data_home = 'data'
+  train_batch_size = 128
+  test_batch_size = 100
+  mode = 'posthoc'  # ['baseline', 'posthoc', 'loss']
+  tau = 1.0
+  tb_log_dir = 'log'
 
 
-def main(_):
+def main():
 
   # Prepare the datasets.
   dataset = utils.dataset_mappings()[FLAGS.dataset]
@@ -65,8 +37,7 @@ def main(_):
       base_probs = np.loadtxt(fin)
   except tf.errors.NotFoundError:
     if FLAGS.mode in ['posthoc', 'loss']:
-      raise app.UsageError(
-          f'{base_probs_path} must exist when `mode` is {FLAGS.mode}.')
+      raise
     else:
       base_probs = None
 
@@ -160,4 +131,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  main()

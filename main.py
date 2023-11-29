@@ -5,13 +5,14 @@ import utils
 import numpy as np
 import tensorflow as tf
 
+from tqdm import tqdm
 
 class FLAGS:
   dataset = 'cifar10-lt'
   data_home = 'data'
   train_batch_size = 128
   test_batch_size = 100
-  mode = 'posthoc'  # ['baseline', 'posthoc', 'loss']
+  mode = 'loss'  # ['baseline', 'posthoc', 'loss']
   tau = 1.0
   tb_log_dir = 'log'
 
@@ -70,7 +71,7 @@ def main():
       os.path.join(FLAGS.tb_log_dir, 'test'))
 
   # Train for num_epochs iterations over the train set.
-  for epoch in range(dataset.num_epochs):
+  for epoch in tqdm(range(dataset.num_epochs)):
 
     # Iterate over the train dataset.
     for step, (x, y) in enumerate(train_dataset):
@@ -85,7 +86,7 @@ def main():
       train_acc_metric.update_state(y, logits)
 
       # Log every 1000 batches.
-      if step % 1000 == 0:
+      if step % 10 == 0:
         print(f'Training loss (for one batch) at step {step}: {loss_value:.4f}')
         with train_summary_writer.as_default():
           tf.summary.scalar(

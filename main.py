@@ -142,7 +142,6 @@ def build_loss_fn(use_la_loss, base_probs, tau=1.0):
   Returns:
     A loss function with signature loss(labels, logits).
   """
-
   def loss_fn(labels, logits):
     if use_la_loss:
       logits = logits + tf.math.log(

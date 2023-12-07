@@ -39,6 +39,9 @@ def Prepdata(num_trainB,num_trainM,num_testB,num_testM,xdata_B,xdata_M,nB,nM,dB)
     xtest = test_bal[index_test,:].reshape([num_testB+num_testM,dB])
     ytest = ytest_bal[index_test].reshape(num_testB+num_testM)
 
+    xtrain = np.float32(xtrain)
+    xtest = np.float32(xtest)
+
     return xtrain,ytrain,xtest,ytest
 
 

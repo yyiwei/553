@@ -1,11 +1,7 @@
 import numpy as np
 
 
-def normalize(data):
-    n, d = data.shape
-    mean = np.mean(data, axis=0).reshape([1, d])
-    std = np.std(data, axis=0).reshape([1, d])
-
+def normalize(data, mean, std):
     return (data-mean)/std
 
 
@@ -85,8 +81,11 @@ y_train = np.load("ytrain_im.npy", allow_pickle=True)    # shape (n_train,)
 y_test = np.load("ytest_im.npy", allow_pickle=True)        # shape (n_test,)
 
 # Normalize the data
-x_train = normalize(x_train)
-x_test = normalize(x_test)
+n, d = x_train.shape
+mean = np.mean(x_train, axis=0).reshape([1, d])
+std = np.std(x_train, axis=0).reshape([1, d])
+x_train = normalize(x_train, mean, std)
+x_test = normalize(x_test, mean, std)
 
 
 tau = 1

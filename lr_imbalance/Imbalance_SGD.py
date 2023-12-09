@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.linear_model import LogisticRegression
 
 
 def normalize(data, mean, std):
@@ -14,14 +16,14 @@ def Gi(xi, yi, alpha, delta, tau, theta):
     # input: training data xi: dimension (d+1)*1, yi: 1/-1, theta: [1 w1 ... wd]
     # output: gradient for all parameters for one iteration
     f = sigmoid(theta.T@xi)
-    k = delta**(-yi*tau)*np.exp(-f*yi*tau+1e-12)
-    gxi = alpha/(1+k)*(-yi*tau)*k*(1+np.exp(-theta.T@xi+1e-12))**- \
-        2*np.exp(-theta.T@xi+1e-12)*xi
-
+    k = delta**(-yi*tau)*np.exp(-f*yi*tau)
+    a = alpha[0] if yi == 1 else alpha[-1]
+    gxi = a/(1+k)*(-yi*tau)*k*(1+np.exp(-theta.T@xi))**(-2) * \
+        np.exp(-theta.T@xi)*xi
     return gxi
 
 
-def logit_lr(x_train, y_train, x_test, y_test, step_size, num_epoch, alpha, tau):
+def logit_lr(x_train, y_train, x_test, y_test, step_size, num_epoch, alpha, tau, G):
     """
     x_train - (n_train, d)
     y_train - (n_train,)
@@ -53,12 +55,12 @@ def logit_lr(x_train, y_train, x_test, y_test, step_size, num_epoch, alpha, tau)
         for i in range(0, n):
             xi = Xtrain[perm[i], :].reshape(d+1, 1)
             yi = y_train[perm[i]]
-            gd = Gi(xi, yi, alpha, delta, tau, theta)
-            theta = theta - step_size*gd
+            gd = G(xi, yi, alpha, delta, tau, theta)
+            theta -= step_size*gd
 
         # Find loss every epoch
 
-        print(theta[0])
+        # print(theta[0])
 
     # Test error
     acc = 0
@@ -67,9 +69,8 @@ def logit_lr(x_train, y_train, x_test, y_test, step_size, num_epoch, alpha, tau)
         # print('f is ',f,'y is',y_test[i])
         if (f >= 0 and y_test[i] >= 0) or (f < 0 and y_test[i] < 0):
             acc += 1
-
-    acc = 1-acc/n_test
-    return acc
+    err = 1-acc/n_test
+    return err
 
 
 # MAIN
@@ -88,11 +89,59 @@ x_train = normalize(x_train, mean, std)
 x_test = normalize(x_test, mean, std)
 
 
-tau = 1
-alpha = 1
-step_size = 0.3
-num_epoch = 500
+step_size = 0.1
+num_epoch = 100
 
-acc = logit_lr(x_train, y_train, x_test, y_test,
-               step_size, num_epoch, alpha, tau)
-print("test error:", acc)
+
+tau = 1
+alpha = [1, 1]
+err = logit_lr(x_train, y_train, x_test, y_test,
+               step_size, num_epoch, alpha, tau, Gi)
+print(f"logist adjusted test err with alpha={alpha}, tau={tau}:", err)
+
+
+def linear_logistic_regression(x_train, y_train, x_test, y_test, balanced=False):
+    # only use sklearn's LogisticRegression
+    clf = LogisticRegression()
+    if balanced:
+        clf = LogisticRegression(class_weight='balanced')
+    clf.fit(x_train, y_train)
+    y_pred = clf.predict(x_test)
+    bal_accuracy = balanced_accuracy_score(y_test, y_pred)
+    return 1 - bal_accuracy
+
+
+print("sklearn unmodified berr:", linear_logistic_regression(
+    x_train, y_train, x_test, y_test))
+
+print("sklearn balanced berr:", linear_logistic_regression(
+    x_train, y_train, x_test, y_test, True))
+
+
+tau = 2
+pi1 = np.count_nonzero(y_train+1) / len(y_train)
+alpha = [pi1, 1-pi1]
+err = logit_lr(x_train, y_train, x_test, y_test,
+               step_size, 500, alpha, tau, Gi)
+print(f"logist adjusted test err with alpha={alpha}, tau={tau}:", err)
+
+tau = 3
+pi1 = np.count_nonzero(y_train+1) / len(y_train)
+alpha = [pi1 ** 2, (1-pi1) ** 2]
+err = logit_lr(x_train, y_train, x_test, y_test,
+               step_size, 4000, alpha, tau, Gi)
+print(f"logist adjusted test err with alpha={alpha}, tau={tau}:", err)
+
+tau = 0.5
+pi1 = np.count_nonzero(y_train+1) / len(y_train)
+alpha = [pi1 ** (-0.5), (1-pi1) ** (-0.5)]
+err = logit_lr(x_train, y_train, x_test, y_test,
+               step_size, 20, alpha, tau, Gi)
+print(f"logist adjusted test err with alpha={alpha}, tau={tau}:", err)
+
+# tau = 0.5
+# pi1 = np.count_nonzero(y_train+1) / len(y_train)
+# alpha = [pi1 ** (-0.5), (1-pi1) ** (-0.5)]
+# err = logit_lr(x_train, y_train, x_test, y_test,
+#                step_size, 20, alpha, tau, Gi)
+# print(f"logist adjusted test err with alpha={alpha}, tau={tau}:", err)
